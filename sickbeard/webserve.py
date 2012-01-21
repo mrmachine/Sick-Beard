@@ -737,13 +737,17 @@ class ConfigSearch:
     @cherrypy.expose
     def saveSearch(self, use_nzbs=None, use_torrents=None, nzb_dir=None, sab_username=None, sab_password=None,
                        sab_apikey=None, sab_category=None, sab_host=None, nzbget_password=None, nzbget_category=None, nzbget_host=None,
-                       torrent_dir=None, nzb_method=None, usenet_retention=None, search_frequency=None, download_propers=None):
+                       torrent_dir=None, nzb_method=None, archival_delay=None, usenet_retention=None, search_frequency=None, download_propers=None):
 
         results = []
 
         # Episode Search
         sickbeard.DOWNLOAD_PROPERS = config.checkbox_to_value(download_propers)
 
+        if archival_delay == None:
+            archival_delay = 0
+
+        sickbeard.ARCHIVAL_DELAY = int(archival_delay)
         if sickbeard.DOWNLOAD_PROPERS:
             sickbeard.properFinderScheduler.silent = False
         else:

@@ -58,7 +58,7 @@ CFG = None
 CONFIG_FILE = None
 
 # this is the version of the config we EXPECT to find
-CONFIG_VERSION = 5
+CONFIG_VERSION = 6
 
 PROG_DIR = '.'
 MY_FULLNAME = None
@@ -128,6 +128,7 @@ METADATA_MEDIABROWSER = None
 METADATA_PS3 = None
 METADATA_WDTV = None
 METADATA_TIVO = None
+METADATA_MEDE8ER = None
 
 QUALITY_DEFAULT = None
 STATUS_DEFAULT = None
@@ -156,7 +157,7 @@ DOWNLOAD_PROPERS = None
 SEARCH_FREQUENCY = None
 BACKLOG_SEARCH_FREQUENCY = 21
 MIN_SEARCH_FREQUENCY = 10
-DEFAULT_SEARCH_FREQUENCY = 60
+DEFAULT_SEARCH_FREQUENCY = 40
 
 EZRSS = False
 
@@ -201,11 +202,13 @@ SAB_APIKEY = None
 SAB_CATEGORY = None
 SAB_HOST = ''
 
+NZBGET_USERNAME = None
 NZBGET_PASSWORD = None
 NZBGET_CATEGORY = None
 NZBGET_HOST = None
 
 USE_XBMC = False
+XBMC_ALWAYS_ON = True
 XBMC_NOTIFY_ONSNATCH = False
 XBMC_NOTIFY_ONDOWNLOAD = False
 XBMC_UPDATE_LIBRARY = False
@@ -265,6 +268,9 @@ NMJ_DATABASE = None
 NMJ_MOUNT = None
 
 USE_SYNOINDEX = False
+SYNOINDEX_NOTIFY_ONSNATCH = False
+SYNOINDEX_NOTIFY_ONDOWNLOAD = False
+SYNOINDEX_UPDATE_LIBRARY = False
 
 USE_NMJv2 = False
 NMJv2_HOST = None
@@ -315,8 +321,8 @@ def initialize(consoleLogging=True):
         global ACTUAL_LOG_DIR, LOG_DIR, WEB_PORT, WEB_LOG, WEB_ROOT, WEB_USERNAME, WEB_PASSWORD, WEB_HOST, WEB_IPV6, USE_API, API_KEY, ENABLE_HTTPS, HTTPS_CERT, HTTPS_KEY, \
                 USE_NZBS, USE_TORRENTS, NZB_METHOD, NZB_DIR, DOWNLOAD_PROPERS, \
                 SAB_USERNAME, SAB_PASSWORD, SAB_APIKEY, SAB_CATEGORY, SAB_HOST, \
-                NZBGET_PASSWORD, NZBGET_CATEGORY, NZBGET_HOST, currentSearchScheduler, backlogSearchScheduler, \
-                USE_XBMC, XBMC_NOTIFY_ONSNATCH, XBMC_NOTIFY_ONDOWNLOAD, XBMC_UPDATE_FULL, XBMC_UPDATE_ONLYFIRST, \
+                NZBGET_USERNAME, NZBGET_PASSWORD, NZBGET_CATEGORY, NZBGET_HOST, currentSearchScheduler, backlogSearchScheduler, \
+                USE_XBMC, XBMC_ALWAYS_ON, XBMC_NOTIFY_ONSNATCH, XBMC_NOTIFY_ONDOWNLOAD, XBMC_UPDATE_FULL, XBMC_UPDATE_ONLYFIRST, \
                 XBMC_UPDATE_LIBRARY, XBMC_HOST, XBMC_USERNAME, XBMC_PASSWORD, \
                 USE_TRAKT, TRAKT_USERNAME, TRAKT_PASSWORD, TRAKT_API, \
                 USE_PLEX, PLEX_NOTIFY_ONSNATCH, PLEX_NOTIFY_ONDOWNLOAD, PLEX_UPDATE_LIBRARY, \
@@ -339,8 +345,9 @@ def initialize(consoleLogging=True):
                 EXTRA_SCRIPTS, USE_TWITTER, TWITTER_USERNAME, TWITTER_PASSWORD, TWITTER_PREFIX, \
                 USE_BOXCAR, BOXCAR_USERNAME, BOXCAR_PASSWORD, BOXCAR_NOTIFY_ONDOWNLOAD, BOXCAR_NOTIFY_ONSNATCH, \
                 USE_PUSHOVER, PUSHOVER_USERKEY, PUSHOVER_NOTIFY_ONDOWNLOAD, PUSHOVER_NOTIFY_ONSNATCH, \
-                USE_LIBNOTIFY, LIBNOTIFY_NOTIFY_ONSNATCH, LIBNOTIFY_NOTIFY_ONDOWNLOAD, USE_NMJ, NMJ_HOST, NMJ_DATABASE, NMJ_MOUNT, USE_NMJv2, NMJv2_HOST, NMJv2_DATABASE, NMJv2_DBLOC, USE_SYNOINDEX, \
-                USE_LISTVIEW, METADATA_XBMC, METADATA_XBMC_12PLUS, METADATA_MEDIABROWSER, METADATA_PS3, metadata_provider_dict, \
+                USE_LIBNOTIFY, LIBNOTIFY_NOTIFY_ONSNATCH, LIBNOTIFY_NOTIFY_ONDOWNLOAD, USE_NMJ, NMJ_HOST, NMJ_DATABASE, NMJ_MOUNT, USE_NMJv2, NMJv2_HOST, NMJv2_DATABASE, NMJv2_DBLOC, \
+                USE_SYNOINDEX, SYNOINDEX_NOTIFY_ONSNATCH, SYNOINDEX_NOTIFY_ONDOWNLOAD, SYNOINDEX_UPDATE_LIBRARY, \
+                USE_LISTVIEW, METADATA_XBMC, METADATA_XBMC_12PLUS, METADATA_MEDIABROWSER, METADATA_MEDE8ER, METADATA_PS3, metadata_provider_dict, \
                 GIT_PATH, MOVE_ASSOCIATED_FILES, \
                 COMING_EPS_LAYOUT, COMING_EPS_SORT, COMING_EPS_DISPLAY_PAUSED, METADATA_WDTV, METADATA_TIVO, IGNORE_WORDS, CREATE_MISSING_SHOW_DIRS, \
                 ADD_SHOWS_WO_DIR, ANON_REDIRECT
@@ -406,13 +413,6 @@ def initialize(consoleLogging=True):
         if not re.match(r'\d+\|[^|]+(?:\|[^|]+)*', ROOT_DIRS):
             ROOT_DIRS = ''
 
-        proxies = urllib.getproxies()
-        proxy_url = None  # @UnusedVariable
-        if 'http' in proxies:
-            proxy_url = proxies['http']  # @UnusedVariable
-        elif 'ftp' in proxies:
-            proxy_url = proxies['ftp']  # @UnusedVariable
-
         # Set our common tvdb_api options here
         TVDB_API_PARMS = {'apikey': TVDB_API_KEY,
                           'language': 'en',
@@ -476,6 +476,7 @@ def initialize(consoleLogging=True):
         METADATA_PS3 = check_setting_str(CFG, 'General', 'metadata_ps3', '0|0|0|0|0|0|0|0|0|0')
         METADATA_WDTV = check_setting_str(CFG, 'General', 'metadata_wdtv', '0|0|0|0|0|0|0|0|0|0')
         METADATA_TIVO = check_setting_str(CFG, 'General', 'metadata_tivo', '0|0|0|0|0|0|0|0|0|0')
+        METADATA_MEDE8ER = check_setting_str(CFG, 'General', 'metadata_mede8er', '0|0|0|0|0|0|0|0|0|0')
 
         CheckSection(CFG, 'GUI')
         COMING_EPS_LAYOUT = check_setting_str(CFG, 'GUI', 'coming_eps_layout', 'banner')
@@ -528,12 +529,14 @@ def initialize(consoleLogging=True):
         SAB_HOST = check_setting_str(CFG, 'SABnzbd', 'sab_host', '')
 
         CheckSection(CFG, 'NZBget')
+        NZBGET_USERNAME = check_setting_str(CFG, 'NZBget', 'nzbget_username', 'nzbget')
         NZBGET_PASSWORD = check_setting_str(CFG, 'NZBget', 'nzbget_password', 'tegbzn6789')
         NZBGET_CATEGORY = check_setting_str(CFG, 'NZBget', 'nzbget_category', 'tv')
         NZBGET_HOST = check_setting_str(CFG, 'NZBget', 'nzbget_host', '')
 
         CheckSection(CFG, 'XBMC')
         USE_XBMC = bool(check_setting_int(CFG, 'XBMC', 'use_xbmc', 0))
+        XBMC_ALWAYS_ON = bool(check_setting_int(CFG, 'XBMC', 'xbmc_always_on', 1))
         XBMC_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_onsnatch', 0))
         XBMC_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'XBMC', 'xbmc_notify_ondownload', 0))
         XBMC_UPDATE_LIBRARY = bool(check_setting_int(CFG, 'XBMC', 'xbmc_update_library', 0))
@@ -606,6 +609,9 @@ def initialize(consoleLogging=True):
 
         CheckSection(CFG, 'Synology')
         USE_SYNOINDEX = bool(check_setting_int(CFG, 'Synology', 'use_synoindex', 0))
+        SYNOINDEX_NOTIFY_ONSNATCH = bool(check_setting_int(CFG, 'Synology', 'synoindex_notify_onsnatch', 0))
+        SYNOINDEX_NOTIFY_ONDOWNLOAD = bool(check_setting_int(CFG, 'Synology', 'synoindex_notify_ondownload', 0))
+        SYNOINDEX_UPDATE_LIBRARY = bool(check_setting_int(CFG, 'Synology', 'synoindex_update_library', 0))
 
         CheckSection(CFG, 'Trakt')
         USE_TRAKT = bool(check_setting_int(CFG, 'Trakt', 'use_trakt', 0))
@@ -657,6 +663,7 @@ def initialize(consoleLogging=True):
                                    (METADATA_PS3, metadata.ps3),
                                    (METADATA_WDTV, metadata.wdtv),
                                    (METADATA_TIVO, metadata.tivo),
+                                   (METADATA_MEDE8ER, metadata.mede8er)
                                    ]:
 
             (cur_metadata_config, cur_metadata_class) = cur_metadata_tuple
@@ -668,54 +675,65 @@ def initialize(consoleLogging=True):
         newznabProviderList = providers.getNewznabProviderList(NEWZNAB_DATA)
         providerList = providers.makeProviderList()
 
-        # initialize schedulars
+        # initialize schedulers
+
+        # updaters
+        versionCheckScheduler = scheduler.Scheduler(versionChecker.CheckVersion(),
+                                                    cycleTime=datetime.timedelta(hours=12),
+                                                    threadName="CHECKVERSION"
+                                                    )
+
+        showQueueScheduler = scheduler.Scheduler(show_queue.ShowQueue(),
+                                                 cycleTime=datetime.timedelta(seconds=3),
+                                                 threadName="SHOWQUEUE",
+                                                 silent=True)
+
+        showUpdaterInstance = showUpdater.ShowUpdater()  # the interval for this is stored inside the class
+        showUpdateScheduler = scheduler.Scheduler(showUpdaterInstance,
+                                                  cycleTime=showUpdaterInstance.updateInterval,
+                                                  threadName="SHOWUPDATER",
+                                                  run_delay=showUpdaterInstance.updateInterval,
+                                                  silent=True
+                                                  )
+
+        # searchers
+        searchQueueScheduler = scheduler.Scheduler(search_queue.SearchQueue(),
+                                                   cycleTime=datetime.timedelta(seconds=3),
+                                                   threadName="SEARCHQUEUE",
+                                                   silent=True
+                                                   )
+
         currentSearchScheduler = scheduler.Scheduler(searchCurrent.CurrentSearcher(),
                                                      cycleTime=datetime.timedelta(minutes=SEARCH_FREQUENCY),
                                                      threadName="SEARCH",
-                                                     runImmediately=True)
-
-        # the interval for this is stored inside the ShowUpdater class
-        showUpdaterInstance = showUpdater.ShowUpdater()
-        showUpdateScheduler = scheduler.Scheduler(showUpdaterInstance,
-                                               cycleTime=showUpdaterInstance.updateInterval,
-                                               threadName="SHOWUPDATER",
-                                               runImmediately=False)
-
-        versionCheckScheduler = scheduler.Scheduler(versionChecker.CheckVersion(),
-                                                     cycleTime=datetime.timedelta(hours=12),
-                                                     threadName="CHECKVERSION",
-                                                     runImmediately=True)
-
-        showQueueScheduler = scheduler.Scheduler(show_queue.ShowQueue(),
-                                               cycleTime=datetime.timedelta(seconds=3),
-                                               threadName="SHOWQUEUE",
-                                               silent=True)
-
-        searchQueueScheduler = scheduler.Scheduler(search_queue.SearchQueue(),
-                                               cycleTime=datetime.timedelta(seconds=3),
-                                               threadName="SEARCHQUEUE",
-                                               silent=True)
-
-        properFinderInstance = properFinder.ProperFinder()
-        properFinderScheduler = scheduler.Scheduler(properFinderInstance,
-                                                     cycleTime=properFinderInstance.updateInterval,
-                                                     threadName="FINDPROPERS",
-                                                     runImmediately=False)
-        if not DOWNLOAD_PROPERS:
-            properFinderScheduler.silent = True
-
-        autoPostProcesserScheduler = scheduler.Scheduler(autoPostProcesser.PostProcesser(),
-                                                     cycleTime=datetime.timedelta(minutes=10),
-                                                     threadName="POSTPROCESSER",
-                                                     runImmediately=True)
-        if not PROCESS_AUTOMATICALLY:
-            autoPostProcesserScheduler.silent = True
+                                                     run_delay=datetime.timedelta(minutes=5)
+                                                     )
 
         backlogSearchScheduler = searchBacklog.BacklogSearchScheduler(searchBacklog.BacklogSearcher(),
                                                                       cycleTime=datetime.timedelta(minutes=get_backlog_cycle_time()),
                                                                       threadName="BACKLOG",
-                                                                      runImmediately=True)
+                                                                      run_delay=datetime.timedelta(minutes=17)
+                                                                      )
+
         backlogSearchScheduler.action.cycleTime = BACKLOG_SEARCH_FREQUENCY
+
+        properFinderInstance = properFinder.ProperFinder()  # the interval for this is stored inside the class
+        properFinderScheduler = scheduler.Scheduler(properFinderInstance,
+                                                    cycleTime=properFinderInstance.updateInterval,
+                                                    threadName="FINDPROPERS",
+                                                    run_delay=properFinderInstance.updateInterval,
+                                                    silent=True
+                                                    )
+
+        # processors
+        autoPostProcesserScheduler = scheduler.Scheduler(autoPostProcesser.PostProcesser(),
+                                                         cycleTime=datetime.timedelta(minutes=10),
+                                                         threadName="POSTPROCESSER",
+                                                         run_delay=datetime.timedelta(minutes=5)
+                                                         )
+
+        if not PROCESS_AUTOMATICALLY:
+            autoPostProcesserScheduler.silent = True
 
         showList = []
         loadingShowList = {}
@@ -982,6 +1000,7 @@ def save_config():
     new_config['General']['metadata_ps3'] = METADATA_PS3
     new_config['General']['metadata_wdtv'] = METADATA_WDTV
     new_config['General']['metadata_tivo'] = METADATA_TIVO
+    new_config['General']['metadata_mede8er'] = METADATA_MEDE8ER
 
     new_config['General']['cache_dir'] = ACTUAL_CACHE_DIR if ACTUAL_CACHE_DIR else 'cache'
     new_config['General']['root_dirs'] = ROOT_DIRS if ROOT_DIRS else ''
@@ -1043,12 +1062,14 @@ def save_config():
     new_config['SABnzbd']['sab_host'] = SAB_HOST
 
     new_config['NZBget'] = {}
+    new_config['NZBget']['nzbget_username'] = NZBGET_USERNAME
     new_config['NZBget']['nzbget_password'] = NZBGET_PASSWORD
     new_config['NZBget']['nzbget_category'] = NZBGET_CATEGORY
     new_config['NZBget']['nzbget_host'] = NZBGET_HOST
 
     new_config['XBMC'] = {}
     new_config['XBMC']['use_xbmc'] = int(USE_XBMC)
+    new_config['XBMC']['xbmc_always_on'] = int(XBMC_ALWAYS_ON)
     new_config['XBMC']['xbmc_notify_onsnatch'] = int(XBMC_NOTIFY_ONSNATCH)
     new_config['XBMC']['xbmc_notify_ondownload'] = int(XBMC_NOTIFY_ONDOWNLOAD)
     new_config['XBMC']['xbmc_update_library'] = int(XBMC_UPDATE_LIBRARY)
@@ -1115,6 +1136,9 @@ def save_config():
 
     new_config['Synology'] = {}
     new_config['Synology']['use_synoindex'] = int(USE_SYNOINDEX)
+    new_config['Synology']['synoindex_notify_onsnatch'] = int(SYNOINDEX_NOTIFY_ONSNATCH)
+    new_config['Synology']['synoindex_notify_ondownload'] = int(SYNOINDEX_NOTIFY_ONDOWNLOAD)
+    new_config['Synology']['synoindex_update_library'] = int(SYNOINDEX_UPDATE_LIBRARY)
 
     new_config['NMJv2'] = {}
     new_config['NMJv2']['use_nmjv2'] = int(USE_NMJv2)

@@ -736,40 +736,34 @@ class ConfigSearch:
 
     @cherrypy.expose
     def saveSearch(self, use_nzbs=None, use_torrents=None, nzb_dir=None, sab_username=None, sab_password=None,
-                       sab_apikey=None, sab_category=None, sab_host=None, nzbget_password=None, nzbget_category=None, nzbget_host=None,
-                       torrent_dir=None, nzb_method=None, archival_delay=None, usenet_retention=None, search_frequency=None, download_propers=None):
+                       sab_apikey=None, sab_category=None, sab_host=None, nzbget_username=None, nzbget_password=None, nzbget_category=None, nzbget_host=None,
+                       torrent_dir=None, nzb_method=None, usenet_retention=None, search_frequency=None, download_propers=None, ignore_words=None):
 
         results = []
 
         # Episode Search
         sickbeard.DOWNLOAD_PROPERS = config.checkbox_to_value(download_propers)
 
-        if archival_delay == None:
-            archival_delay = 0
-
-        sickbeard.ARCHIVAL_DELAY = int(archival_delay)
-        if sickbeard.DOWNLOAD_PROPERS:
-            sickbeard.properFinderScheduler.silent = False
-        else:
-            sickbeard.properFinderScheduler.silent = True
-
         config.change_SEARCH_FREQUENCY(search_frequency)
         sickbeard.USENET_RETENTION = config.to_int(usenet_retention, default=500)
+
+        sickbeard.IGNORE_WORDS = ignore_words
 
         # NZB Search
         sickbeard.USE_NZBS = config.checkbox_to_value(use_nzbs)
         sickbeard.NZB_METHOD = nzb_method
 
+        sickbeard.SAB_HOST = config.clean_url(sab_host)
         sickbeard.SAB_USERNAME = sab_username
         sickbeard.SAB_PASSWORD = sab_password
         sickbeard.SAB_APIKEY = sab_apikey.strip()
         sickbeard.SAB_CATEGORY = sab_category
-        sickbeard.SAB_HOST = config.clean_url(sab_host)
 
         if not config.change_NZB_DIR(nzb_dir):
             results += ["Unable to create directory " + os.path.normpath(nzb_dir) + ", directory not changed."]
 
-        sickbeard.NZBGET_HOST = config.clean_host(nzbget_host)
+        sickbeard.NZBGET_HOST = config.clean_url(nzbget_host)
+        sickbeard.NZBGET_USERNAME = nzbget_username
         sickbeard.NZBGET_PASSWORD = nzbget_password
         sickbeard.NZBGET_CATEGORY = nzbget_category
 
@@ -803,7 +797,7 @@ class ConfigPostProcessing:
 
     @cherrypy.expose
     def savePostProcessing(self, naming_pattern=None, naming_multi_ep=None,
-                    xbmc_data=None, xbmc_12plus_data=None, mediabrowser_data=None, sony_ps3_data=None, wdtv_data=None, tivo_data=None,
+                    xbmc_data=None, xbmc_12plus_data=None, mediabrowser_data=None, sony_ps3_data=None, wdtv_data=None, tivo_data=None, mede8er_data=None,
                     keep_processed_dir=None, process_automatically=None, rename_episodes=None,
                     move_associated_files=None, tv_download_dir=None, naming_custom_abd=None, naming_abd_pattern=None):
 
@@ -846,6 +840,7 @@ class ConfigPostProcessing:
         sickbeard.METADATA_PS3 = sony_ps3_data
         sickbeard.METADATA_WDTV = wdtv_data
         sickbeard.METADATA_TIVO = tivo_data
+        sickbeard.METADATA_MEDE8ER = mede8er_data
 
         sickbeard.metadata_provider_dict['XBMC'].set_config(sickbeard.METADATA_XBMC)
         sickbeard.metadata_provider_dict['XBMC 12+'].set_config(sickbeard.METADATA_XBMC_12PLUS)
@@ -853,6 +848,7 @@ class ConfigPostProcessing:
         sickbeard.metadata_provider_dict['Sony PS3'].set_config(sickbeard.METADATA_PS3)
         sickbeard.metadata_provider_dict['WDTV'].set_config(sickbeard.METADATA_WDTV)
         sickbeard.metadata_provider_dict['TIVO'].set_config(sickbeard.METADATA_TIVO)
+        sickbeard.metadata_provider_dict['Mede8er'].set_config(sickbeard.METADATA_MEDE8ER)
 
         # Save changes
         sickbeard.save_config()
@@ -1088,27 +1084,30 @@ class ConfigNotifications:
         return _munge(t)
 
     @cherrypy.expose
-    def saveNotifications(self, use_xbmc=None, xbmc_notify_onsnatch=None, xbmc_notify_ondownload=None, xbmc_update_onlyfirst=None,
-                          xbmc_update_library=None, xbmc_update_full=None, xbmc_host=None, xbmc_username=None, xbmc_password=None,
+    def saveNotifications(self,
+                          use_xbmc=None, xbmc_always_on=None, xbmc_notify_onsnatch=None, xbmc_notify_ondownload=None, xbmc_update_onlyfirst=None,
+                              xbmc_update_library=None, xbmc_update_full=None, xbmc_host=None, xbmc_username=None, xbmc_password=None,
                           use_plex=None, plex_notify_onsnatch=None, plex_notify_ondownload=None, plex_update_library=None,
-                          plex_server_host=None, plex_host=None, plex_username=None, plex_password=None,
+                              plex_server_host=None, plex_host=None, plex_username=None, plex_password=None,
                           use_growl=None, growl_notify_onsnatch=None, growl_notify_ondownload=None, growl_host=None, growl_password=None,
                           use_prowl=None, prowl_notify_onsnatch=None, prowl_notify_ondownload=None, prowl_api=None, prowl_priority=0,
                           use_twitter=None, twitter_notify_onsnatch=None, twitter_notify_ondownload=None,
                           use_boxcar=None, boxcar_notify_onsnatch=None, boxcar_notify_ondownload=None, boxcar_username=None,
                           use_pushover=None, pushover_notify_onsnatch=None, pushover_notify_ondownload=None, pushover_userkey=None,
                           use_libnotify=None, libnotify_notify_onsnatch=None, libnotify_notify_ondownload=None,
-                          use_nmj=None, nmj_host=None, nmj_database=None, nmj_mount=None, use_synoindex=None,
+                          use_nmj=None, nmj_host=None, nmj_database=None, nmj_mount=None,
+                          use_synoindex=None, synoindex_notify_onsnatch=None, synoindex_notify_ondownload=None, synoindex_update_library=None,
                           use_nmjv2=None, nmjv2_host=None, nmjv2_dbloc=None, nmjv2_database=None,
                           use_trakt=None, trakt_username=None, trakt_password=None, trakt_api=None,
                           use_pytivo=None, pytivo_notify_onsnatch=None, pytivo_notify_ondownload=None, pytivo_update_library=None,
-                          pytivo_host=None, pytivo_share_name=None, pytivo_tivo_name=None,
+                              pytivo_host=None, pytivo_share_name=None, pytivo_tivo_name=None,
                           use_nma=None, nma_notify_onsnatch=None, nma_notify_ondownload=None, nma_api=None, nma_priority=0):
 
         results = []
 
-        # Home Theater
+        # Home Theater / NAS
         sickbeard.USE_XBMC = config.checkbox_to_value(use_xbmc)
+        sickbeard.XBMC_ALWAYS_ON = config.checkbox_to_value(xbmc_always_on)
         sickbeard.XBMC_NOTIFY_ONSNATCH = config.checkbox_to_value(xbmc_notify_onsnatch)
         sickbeard.XBMC_NOTIFY_ONDOWNLOAD = config.checkbox_to_value(xbmc_notify_ondownload)
         sickbeard.XBMC_UPDATE_LIBRARY = config.checkbox_to_value(xbmc_update_library)
@@ -1138,6 +1137,9 @@ class ConfigNotifications:
         sickbeard.NMJv2_DBLOC = nmjv2_dbloc
 
         sickbeard.USE_SYNOINDEX = config.checkbox_to_value(use_synoindex)
+        sickbeard.SYNOINDEX_NOTIFY_ONSNATCH = config.checkbox_to_value(synoindex_notify_onsnatch)
+        sickbeard.SYNOINDEX_NOTIFY_ONDOWNLOAD = config.checkbox_to_value(synoindex_notify_ondownload)
+        sickbeard.SYNOINDEX_UPDATE_LIBRARY = config.checkbox_to_value(synoindex_update_library)
 
         sickbeard.USE_PYTIVO = config.checkbox_to_value(use_pytivo)
         # sickbeard.PYTIVO_NOTIFY_ONSNATCH = config.checkbox_to_value(pytivo_notify_onsnatch)
@@ -1213,7 +1215,7 @@ class ConfigHidden:
         return _munge(t)
 
     @cherrypy.expose
-    def saveHidden(self, anon_redirect=None, git_path=None, extra_scripts=None, create_missing_show_dirs=None, add_shows_wo_dir=None, ignore_words=None):
+    def saveHidden(self, anon_redirect=None, git_path=None, extra_scripts=None, create_missing_show_dirs=None, add_shows_wo_dir=None):
 
         results = []
 
@@ -1222,7 +1224,6 @@ class ConfigHidden:
         sickbeard.EXTRA_SCRIPTS = [x.strip() for x in extra_scripts.split('|') if x.strip()]
         sickbeard.CREATE_MISSING_SHOW_DIRS = config.checkbox_to_value(create_missing_show_dirs)
         sickbeard.ADD_SHOWS_WO_DIR = config.checkbox_to_value(add_shows_wo_dir)
-        sickbeard.IGNORE_WORDS = ignore_words
 
         sickbeard.save_config()
 
@@ -1351,12 +1352,18 @@ class HomePostProcess:
         return _munge(t)
 
     @cherrypy.expose
-    def processEpisode(self, dir=None, nzbName=None, jobName=None, quiet=None):
+    def processEpisode(self, dir=None, nzbName=None, method=None, jobName=None, quiet=None, *args, **kwargs):
 
         if not dir:
             redirect("/home/postprocess/")
         else:
-            result = processTV.processDir(dir, nzbName)
+            pp_options = {}
+            for key, value in kwargs.iteritems():
+                if value == 'on':
+                    value = True
+                pp_options[key] = value
+
+            result = processTV.processDir(dir, nzbName, method=method, pp_options=pp_options)
             if quiet != None and int(quiet) == 1:
                 return result
 
@@ -1913,7 +1920,7 @@ class Home:
         if result:
             return "Tweet successful, check your twitter to make sure it worked"
         else:
-            return "Error sending tweet"
+            return "Error sending Tweet"
 
     @cherrypy.expose
     def testXBMC(self, host=None, username=None, password=None):
@@ -1965,9 +1972,9 @@ class Home:
         host = config.clean_host(host)
         result = notifiers.nmj_notifier.test_notify(urllib.unquote_plus(host), database, mount)
         if result:
-            return "Successfully started the scan update"
+            return "Successfully started the scan update for NMJ"
         else:
-            return "Test failed to start the scan update"
+            return "Failed to start the scan update for NMJ"
 
     @cherrypy.expose
     def settingsNMJ(self, host=None):
@@ -1987,9 +1994,9 @@ class Home:
         host = config.clean_host(host)
         result = notifiers.nmjv2_notifier.test_notify(urllib.unquote_plus(host))
         if result:
-            return "Test notice sent successfully to " + urllib.unquote_plus(host)
+            return "Successfully started the scan update for NMJv2"
         else:
-            return "Test notice failed to " + urllib.unquote_plus(host)
+            return "Failed to start the scan update for NMJv2"
 
     @cherrypy.expose
     def settingsNMJv2(self, host=None, dbloc=None, instance=None):
@@ -1998,9 +2005,9 @@ class Home:
         host = config.clean_host(host)
         result = notifiers.nmjv2_notifier.notify_settings(urllib.unquote_plus(host), dbloc, instance)
         if result:
-            return '{"message": "NMJ Database found at: %(host)s", "database": "%(database)s"}' % {"host": host, "database": sickbeard.NMJv2_DATABASE}
+            return '{"message": "NMJv2 Database found at: %(host)s", "database": "%(database)s"}' % {"host": host, "database": sickbeard.NMJv2_DATABASE}
         else:
-            return '{"message": "Unable to find NMJ Database at location: %(dbloc)s. Is the right location selected and PCH running?", "database": ""}' % {"dbloc": dbloc}
+            return '{"message": "Unable to find NMJv2 Database at location: %(dbloc)s. Is the right location selected and PCH running?", "database": ""}' % {"dbloc": dbloc}
 
     @cherrypy.expose
     def testTrakt(self, api=None, username=None, password=None):
@@ -2021,6 +2028,16 @@ class Home:
             return "Test NMA notice sent successfully"
         else:
             return "Test NMA notice failed"
+
+    @cherrypy.expose
+    def testSynoNotify(self):
+        cherrypy.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
+
+        result = notifiers.synoindex_notifier.test_notify()
+        if result:
+            return "Test Synology notice sent successfully"
+        else:
+            return "Test Synology notice failed"
 
     @cherrypy.expose
     def shutdown(self, pid=None):
@@ -2118,7 +2135,7 @@ class Home:
                 t.submenu.append({ 'title': 'Delete',               'path': 'home/deleteShow?show=%d' % showObj.tvdbid, 'confirm': True })
                 t.submenu.append({ 'title': 'Re-scan files',        'path': 'home/refreshShow?show=%d' % showObj.tvdbid })
                 t.submenu.append({ 'title': 'Force Full Update',    'path': 'home/updateShow?show=%d&amp;force=1' % showObj.tvdbid })
-                t.submenu.append({ 'title': 'Update show in XBMC',  'path': 'home/updateXBMC?showName=%s' % urllib.quote_plus(showObj.name.encode('utf-8')), 'requires': haveXBMC })
+                t.submenu.append({ 'title': 'Update show in XBMC',  'path': 'home/updateXBMC?show=%d' % showObj.tvdbid, 'requires': haveXBMC })
                 t.submenu.append({ 'title': 'Preview Rename',       'path': 'home/testRename?show=%d' % showObj.tvdbid })
 
         t.show = showObj
@@ -2162,7 +2179,7 @@ class Home:
         return result['description'] if result else 'Episode not found.'
 
     @cherrypy.expose
-    def editShow(self, show=None, location=None, anyQualities=[], bestQualities=[], flatten_folders=None, paused=None, directCall=False, air_by_date=None, tvdbLang=None):
+    def editShow(self, show=None, location=None, anyQualities=[], bestQualities=[], flatten_folders=None, paused=None, directCall=False, air_by_date=None, tvdbLang=None, rls_ignore_words=None, rls_require_words=None):
 
         if show == None:
             errString = "Invalid show ID: " + str(show)
@@ -2190,8 +2207,6 @@ class Home:
             return _munge(t)
 
         flatten_folders = config.checkbox_to_value(flatten_folders)
-        logger.log(u"flatten folders: " + str(flatten_folders))
-
         paused = config.checkbox_to_value(paused)
         air_by_date = config.checkbox_to_value(air_by_date)
 
@@ -2226,8 +2241,13 @@ class Home:
                     errors.append("Unable to refresh this show: " + ex(e))
 
             showObj.paused = paused
-            showObj.air_by_date = air_by_date
-            showObj.lang = tvdb_lang
+
+            # if this routine was called via the mass edit, do not change the options that are not passed
+            if not directCall:
+                showObj.air_by_date = air_by_date
+                showObj.lang = tvdb_lang
+                showObj.rls_ignore_words = rls_ignore_words.strip()
+                showObj.rls_require_words = rls_require_words.strip()
 
             # if we change location clear the db of episodes, change it, write to db, and rescan
             if os.path.normpath(showObj._location) != os.path.normpath(location):
@@ -2333,14 +2353,19 @@ class Home:
         redirect("/home/displayShow?show=" + str(showObj.tvdbid))
 
     @cherrypy.expose
-    def updateXBMC(self, showName=None):
+    def updateXBMC(self, show=None):
         if sickbeard.XBMC_UPDATE_ONLYFIRST:
             # only send update to first host in the list -- workaround for xbmc sql backend users
             host = sickbeard.XBMC_HOST.split(",")[0].strip()
         else:
             host = sickbeard.XBMC_HOST
 
-        if notifiers.xbmc_notifier.update_library(showName=showName):
+        if show:
+            show_obj = sickbeard.helpers.findCertainShow(sickbeard.showList, int(show))
+        else:
+            show_obj = None
+
+        if notifiers.xbmc_notifier.update_library(show_obj=show_obj):
             ui.notifications.message("Library update command sent to XBMC host(s): " + host)
         else:
             ui.notifications.error("Unable to contact one or more XBMC host(s): " + host)
